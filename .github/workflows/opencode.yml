@@ -47,15 +47,13 @@ jobs:
           config = {
               "$schema": "https://opencode.ai/config.json",
               "provider": {
-                  "custom": {
-                      "npm": "@ai-sdk/openai-compatible",
-                      "name": "Custom provider",
+                  "openai": {
                       "options": {
                           "baseURL": "{env:PROVIDER_BASE_URL}",
                           "apiKey": "{env:PROVIDER_API_KEY}",
                       },
                       "models": {
-                          "agent": {"id": os.environ["PROVIDER_MODEL"], "name": "Agent"}
+                          os.environ["PROVIDER_MODEL"]: {"name": os.environ["PROVIDER_MODEL"]}
                       },
                   }
               },
@@ -77,5 +75,5 @@ jobs:
           PROVIDER_BASE_URL: ${{ vars.OPENCODE_BASE_URL }}
           PROVIDER_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
-          model: custom/agent
+          model: openai/${{ vars.OPENCODE_MODEL }}
           share: 'false'

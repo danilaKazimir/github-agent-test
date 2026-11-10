@@ -54,11 +54,11 @@ Workflow `.github/workflows/opencode.yml` запускает агента по �
 1. Установите [OpenCode GitHub App](https://github.com/apps/opencode-agent) на
    репозиторий.
 2. В **Settings → Secrets and variables → Actions → Variables** добавьте
-   `OPENCODE_BASE_URL` (адрес OpenAI-совместимого API, обычно с `/v1`) и
+   `OPENCODE_BASE_URL` (адрес OpenAI Responses API, обычно с `/v1`) и
    `OPENCODE_MODEL` (точный ID модели у провайдера).
 3. В **Actions → Secrets** добавьте ключ провайдера как `OPENCODE_API_KEY`.
-   Модель должна поддерживать tool calling; API должен быть доступен с GitHub
-   Actions runner.
+   Модель должна поддерживать tool calling через Responses API; API должен быть
+   доступен с GitHub Actions runner.
 4. Добавьте workflow и `AGENTS.md` в default-ветку, затем оставьте комментарий
    в issue, например: `/opencode Изучи задачу и предложи решение`.
 
