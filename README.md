@@ -43,6 +43,28 @@ make test
 make lint
 ```
 
+## OpenCode в GitHub Issues
+
+Workflow `.github/workflows/opencode.yml` запускает агента по комментарию
+`/opencode` или `/oc` в issue. Агент отвечает в issue и, если изменил файлы,
+создаёт ветку и PR. Запуск доступен участникам с правом записи в репозиторий.
+
+Для настройки:
+
+1. Установите [OpenCode GitHub App](https://github.com/apps/opencode-agent) на
+   репозиторий.
+2. В **Settings → Secrets and variables → Actions → Variables** добавьте
+   `OPENCODE_BASE_URL` (адрес OpenAI-совместимого API, обычно с `/v1`) и
+   `OPENCODE_MODEL` (точный ID модели у провайдера).
+3. В **Actions → Secrets** добавьте ключ провайдера как `OPENCODE_API_KEY`.
+   Модель должна поддерживать tool calling; API должен быть доступен с GitHub
+   Actions runner.
+4. Добавьте workflow и `AGENTS.md` в default-ветку, затем оставьте комментарий
+   в issue, например: `/opencode Изучи задачу и предложи решение`.
+
+Для реализации задачи можно написать `/opencode Исправь эту проблему и проверь
+тесты`. Проверки и их результаты будут доступны в GitHub Actions и PR.
+
 ---
 
 [![Hexlet Ltd. logo](https://raw.githubusercontent.com/Hexlet/assets/master/images/hexlet_logo128.png)](https://hexlet.io?utm_source=github&utm_medium=link&utm_campaign=fastapi-school-app)

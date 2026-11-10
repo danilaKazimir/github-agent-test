@@ -1,0 +1,81 @@
+name: OpenCode
+
+on:
+  # OpenCode additionally checks the commenter's repository write permission.
+  # jactionlint ignore=dangerous-triggers
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: opencode-${{ github.event.comment.id }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  opencode:
+    if: |
+      !github.event.issue.pull_request &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association) &&
+      (contains(github.event.comment.body, '/opencode') || contains(github.event.comment.body, '/oc'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Configure provider
+        env:
+          PROVIDER_BASE_URL: ${{ vars.OPENCODE_BASE_URL }}
+          PROVIDER_MODEL: ${{ vars.OPENCODE_MODEL }}
+          PROVIDER_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          for name in ("PROVIDER_BASE_URL", "PROVIDER_MODEL", "PROVIDER_API_KEY"):
+              if not os.environ.get(name):
+                  raise SystemExit(f"Missing {name}; configure the OpenCode Actions variables and secret")
+
+          config = {
+              "$schema": "https://opencode.ai/config.json",
+              "provider": {
+                  "custom": {
+                      "npm": "@ai-sdk/openai-compatible",
+                      "name": "Custom provider",
+                      "options": {
+                          "baseURL": "{env:PROVIDER_BASE_URL}",
+                          "apiKey": "{env:PROVIDER_API_KEY}",
+                      },
+                      "models": {
+                          "agent": {"id": os.environ["PROVIDER_MODEL"], "name": "Agent"}
+                      },
+                  }
+              },
+          }
+          path = Path(os.environ["RUNNER_TEMP"]) / "opencode-github.json"
+          path.write_text(json.dumps(config), encoding="utf-8")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+              env.write(f"OPENCODE_CONFIG={path}\n")
+          PY
+
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      - uses: jdx/mise-action@82a612c5ab8bcda7cc5db6b7e81a8e7584c3dc6e # v5.2.3
+      - name: Install dependencies and build CSS
+        run: make setup
+
+      - name: Run OpenCode
+        uses: anomalyco/opencode/github@77fc88c8ade8e5a620ebbe1197f3a572d29ae91a # latest
+        env:
+          PROVIDER_BASE_URL: ${{ vars.OPENCODE_BASE_URL }}
+          PROVIDER_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: custom/agent
+          share: 'false'
