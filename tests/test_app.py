@@ -125,12 +125,12 @@ def test_user_password_confirmation(client):
             "SELECT id, name, email, password FROM user ORDER BY id",
             {
                 "email": "original@example.com",
-                "password": "secret",
+                "password": "secret",  # betterleaks:allow -- test fixture
                 "password_confirmation": "secret",
             },
             {
                 "email": "changed@example.com",
-                "password": "newsecret",
+                "password": "newsecret",  # betterleaks:allow -- test fixture
                 "password_confirmation": "newsecret",
             },
         ),

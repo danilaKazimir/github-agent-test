@@ -1,0 +1,3 @@
+# Test-only fixture passwords in the original PR commit.
+da5f25510361a5ac2455aa4f394b2d933ebfb9f8:tests/test_app.py:generic-password:128
+da5f25510361a5ac2455aa4f394b2d933ebfb9f8:tests/test_app.py:generic-password:133
