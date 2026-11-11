@@ -1,4 +1,5 @@
 import re
+import sqlite3
 
 import pytest
 from fastapi.testclient import TestClient
@@ -106,3 +107,85 @@ def test_user_password_confirmation(client):
     )
     assert response.status_code == 422
     assert "Пароль и подтверждение не совпадают" in response.text
+
+
+@pytest.mark.parametrize(
+    ("path", "field", "query", "original", "changed"),
+    [
+        (
+            "/courses",
+            "title",
+            "SELECT id, title, description FROM course ORDER BY id",
+            {"description": "Исходное описание"},
+            {"description": "Новое описание"},
+        ),
+        (
+            "/users",
+            "name",
+            "SELECT id, name, email, password FROM user ORDER BY id",
+            {
+                "email": "original@example.com",
+                "password": "secret",
+                "password_confirmation": "secret",
+            },
+            {
+                "email": "changed@example.com",
+                "password": "newsecret",
+                "password_confirmation": "newsecret",
+            },
+        ),
+    ],
+)
+def test_names_are_trimmed_before_validation(
+    client, path, field, query, original, changed
+):
+    token = csrf_token(client, f"{path}/new")
+
+    def rows():
+        with sqlite3.connect("test.sqlite") as connection:
+            return connection.execute(query).fetchall()
+
+    before = rows()
+    for value in ("  ", "\t\n\u00a0", " A "):
+        response = client.post(
+            path,
+            data={**original, "csrf_token": token, field: value},
+        )
+        assert response.status_code == 422
+        assert "at least 2 characters" in response.text
+        assert rows() == before
+
+    created = client.post(
+        path,
+        data={**original, "csrf_token": token, field: " \tПервое имя\u00a0 "},
+        follow_redirects=False,
+    )
+    assert created.status_code == 303
+    after_create = rows()
+    assert len(after_create) == len(before) + 1
+    record = after_create[-1]
+    assert record[1] == "Первое имя"
+    record_id = record[0]
+
+    for value in ("  ", "\t\n\u00a0", " A "):
+        response = client.post(
+            f"{path}/{record_id}/edit",
+            data={**changed, "csrf_token": token, field: value},
+        )
+        assert response.status_code == 422
+        assert "at least 2 characters" in response.text
+        assert rows() == after_create
+
+    updated = client.post(
+        f"{path}/{record_id}/edit",
+        data={**changed, "csrf_token": token, field: " \tНовое имя\u00a0 "},
+        follow_redirects=False,
+    )
+    assert updated.status_code == 303
+    updated_record = rows()[-1]
+    assert updated_record[0] == record_id
+    assert updated_record[1] == "Новое имя"
+    if field == "title":
+        assert updated_record[2:] == ("Новое описание",)
+    else:
+        assert updated_record[2:] == ("changed@example.com", "newsecret")

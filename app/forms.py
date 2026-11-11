@@ -1,7 +1,10 @@
+from typing import Annotated
+
 from pydantic import (
     BaseModel,
     EmailStr,
     Field,
+    StringConstraints,
     ValidationError,
     model_validator,
 )
@@ -11,12 +14,14 @@ from pydantic import (
 
 
 class CourseForm(BaseModel):
-    title: str = Field(min_length=2)
+    title: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=2)
+    ]
     description: str = ""
 
 
 class UserForm(BaseModel):
-    name: str = Field(min_length=2)
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=2)]
     email: EmailStr
     password: str = Field(min_length=5)
     password_confirmation: str
